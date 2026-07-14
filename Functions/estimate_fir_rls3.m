@@ -1,19 +1,51 @@
-function [theta_hat] = ...
-    estimate_fir_rls3(u, y, order, theta0, alpha, draw )
-    arguments
-        u
-        y
-        order
-        theta0
-        alpha
-        draw = false
-    end
-% Estimates an FIR model by repeatedly calling rls3_step.
+
+function theta_hat = estimate_fir_rls3(u, y, n,  alpha, theta0, step_callback)
+
+% Estimates the parameters of a discrete-time FIR model using the recursive
+% least-squares algorithm implemented in rls3_step.
 %
 % Model:
 %   y(t) = b1*u(t-1) + ... + bn*u(t-n) + e(t)
+%
+% Inputs:
+%   u             - Vector containing the measured input signal samples.
+%   y             - Vector containing the corresponding measured output
+%                   signal samples.
+%   order         - Order n of the FIR model, corresponding to the number
+%                   of parameters to be estimated.
+%   alpha         - (Optional) initial scaling factor of the inverse information
+%                   matrix. Larger values represent greater initial
+%                   uncertainty in the parameter estimates.
+%                   The default value is 1.
+%   theta0        - (Optional) initial estimate of the FIR parameter vector.
+%                   The default value is a zero vector.
+%   step_callback - (Optional) function handle called after each recursive
+%                   update:
+%
+%                       step_callback(t, theta_hat, prediction_error)
+%
+%                   It can be used to visualize the online evolution of the
+%                   parameter estimates and prediction error without
+%                   coupling the visualization logic to the estimation
+%                   algorithm.
+%
+% Although the complete input and output datasets are provided to the 
+% function at initialization, the measurements are processed sequentially. 
+% At each iteration, only the current output sample and the previously 
+% available input samples are used. The implementation therefore simulates 
+% an online identification scenario in which measurements become available 
+% progressively, as would sensor data in a real-time application..
+    arguments 
+        u 
+        y 
+        n 
+        alpha (1,1) {mustBePositive} = 1
+        theta0 = zeros(n,1)
+        step_callback function_handle = @(~) []
+    end
 
     %% Prepare data
+    % Force arguments to be column vectors
     u = u(:);
     y = y(:);
     theta0 = theta0(:);
@@ -24,7 +56,7 @@ function [theta_hat] = ...
         error('Input and output must have the same length.');
     end
 
-    if length(theta0) ~= order
+    if length(theta0) ~= n
         error('theta0 must contain exactly "order" elements.');
     end
 
@@ -34,102 +66,25 @@ function [theta_hat] = ...
 
     %% Initial conditions
     theta_hat = theta0;
-    Sinv = alpha * eye(order);
-
-    theta_history = NaN(order, N);
-    error_history = NaN(1, N);
-
-    theta_history(:,1:order) = ...
-        repmat(theta0, 1, order);
-
- %% Create live plot
-    if draw
-       
-        figure;
-    
-        layout = tiledlayout(2,1, ...
-            'TileSpacing', 'compact', ...
-            'Padding', 'compact');
-    
-        % Parameter estimates
-        ax1 = nexttile(layout);
-        hold(ax1, 'on');
-        grid(ax1, 'on');
-    
-        theta_lines = gobjects(order,1);
-        colors = lines(order);
-        
-        for k = 1:order
-            theta_lines(k) = animatedline( ...
-                ax1, ...
-                'Color', colors(k,:), ...
-                'LineWidth', 1.5, ...
-                'DisplayName', sprintf('\\theta_%d', k));
-        end
-        xlabel(ax1, 'Sample t');
-        ylabel(ax1, 'Parameter estimate');
-        title(ax1, 'Online RLS parameter estimates');
-    
-        % Predetermined x-axis
-        xlim(ax1, [1 N]);
-    
-        % Fixed legend
-        legend(ax1, ...
-            'Location', 'northeast', ...
-            'AutoUpdate', 'off');
-    
-        % Prediction error
-        ax2 = nexttile(layout);
-        hold(ax2, 'on');
-        grid(ax2, 'on');
-    
-       error_line = animatedline( ...
-        ax2, ...
-        'Color', [0.7 0.12 0.15], ...
-        'LineWidth', 1.2);
-    
-        xlabel(ax2, 'Sample t');
-        ylabel(ax2, 'Prediction error e(t)');
-        title(ax2, 'Online prediction error');
-    
-        % Predetermined x-axis
-        xlim(ax2, [1 N]);
-    end
-
+    Sinv = alpha * eye(n);
 
     %% Process measurements sequentially
-    for t = order+1:N
+    for t = n+1:N
 
         % FIR regressor:
         % phi(t) = [u(t-1), ..., u(t-order)]'
-        phi = u(t-1:-1:t-order);
+        phi = u(t-1:-1:t-n);
 
         % Perform one RLS III step
-        [theta_hat, Sinv, prediction_error, ~] = rls3_step(phi,y(t),theta_hat, Sinv);
+        [theta_hat, Sinv, prediction_error, ~] = rls3_step(phi, y(t), theta_hat, Sinv);
 
-  
-        % Update parameter plot
-        if draw
-             % Store results
-            theta_history(:,t) = theta_hat;
-            error_history(t) = prediction_error;
-
-            % Draw
-            for k = 1:order
-                addpoints( ...
-                    theta_lines(k), ...
-                    t, ...
-                    theta_hat(k));
-            end
-    
-            % Update error plot
-            addpoints( ...
-                error_line, ...
-                t, ...
-                prediction_error);
-    
-            drawnow limitrate;
-        end
+        
+        % update animation based on correction
+        state.t = t; 
+        state.theta_hat = theta_hat; 
+        state.prediction_error = prediction_error;
+        step_callback(state);
         
     end
 end
+
