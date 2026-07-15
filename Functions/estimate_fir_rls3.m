@@ -1,4 +1,3 @@
-
 function theta_hat = estimate_fir_rls3(u, y, n,  alpha, theta0, step_callback)
 
 % Estimates the parameters of a discrete-time FIR model using the recursive
@@ -75,7 +74,7 @@ function theta_hat = estimate_fir_rls3(u, y, n,  alpha, theta0, step_callback)
         % phi(t) = [u(t-1), ..., u(t-order)]'
         phi = u(t-1:-1:t-n);
 
-        % Perform one RLS III step
+        % Perform one RLS III step (For further description go to rls3_step.mlx)
         [theta_hat, Sinv, prediction_error, ~] = rls3_step(phi, y(t), theta_hat, Sinv);
 
         
