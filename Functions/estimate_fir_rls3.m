@@ -6,34 +6,24 @@ function theta_hat = estimate_fir_rls3(u, y, n,  alpha, theta0, step_callback)
 % Model:
 %   y(t) = b1*u(t-1) + ... + bn*u(t-n) + e(t)
 %
-% Inputs:
-%   u             - Vector containing the measured input signal samples.
-%   y             - Vector containing the corresponding measured output
-%                   signal samples.
-%   order         - Order n of the FIR model, corresponding to the number
-%                   of parameters to be estimated.
-%   alpha         - (Optional) initial scaling factor of the inverse information
-%                   matrix. Larger values represent greater initial
-%                   uncertainty in the parameter estimates.
-%                   The default value is 1.
-%   theta0        - (Optional) initial estimate of the FIR parameter vector.
-%                   The default value is a zero vector.
-%   step_callback - (Optional) function handle called after each recursive
-%                   update:
+% INPUT
+% u: measured input signal samples
+% y: measured output signal samples
+% order: FIR model order and number of parameters to estimate
+% alpha: optional initial scaling factor of the inverse information matrix
+% theta0: optional initial estimate of the FIR parameter vector
+% step_callback: optional function handle called after each recursive update
 %
-%                       step_callback(t, theta_hat, prediction_error)
-%
-%                   It can be used to visualize the online evolution of the
-%                   parameter estimates and prediction error without
-%                   coupling the visualization logic to the estimation
-%                   algorithm.
-%
+% OUTPUT
+% theta_hat: final estimate of the FIR parameter vector
+
 % Although the complete input and output datasets are provided to the 
 % function at initialization, the measurements are processed sequentially. 
 % At each iteration, only the current output sample and the previously 
 % available input samples are used. The implementation therefore simulates 
 % an online identification scenario in which measurements become available 
-% progressively, as would sensor data in a real-time application..
+% progressively, as would sensor data in a real-time application.
+
     arguments 
         u 
         y 
