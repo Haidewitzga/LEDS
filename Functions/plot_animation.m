@@ -18,11 +18,7 @@ function update_plot = plot_animation(order, N)
     colors = lines(order);
 
     for k = 1:order
-        theta_lines(k) = animatedline( ...
-            ax1, ...
-            'Color', colors(k, :), ...
-            'LineWidth', 1.5, ...
-            'DisplayName', sprintf('\\theta_%d', k));
+        theta_lines(k) = animatedline(  ax1, 'Color', colors(k, :),  'LineWidth', 1.5,  'DisplayName', sprintf('\\theta_%d', k));
     end
 
     xlabel(ax1, 'Sample t');
@@ -53,7 +49,8 @@ function update_plot = plot_animation(order, N)
 
     %% Return the nested update function
     update_plot = @update_animation;
-
+    % For every new sample this function is going to be called to draw a
+    % new point
     function update_animation(state)
 
         for k = 1:order

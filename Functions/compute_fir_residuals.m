@@ -1,5 +1,13 @@
 function residuals = compute_fir_residuals(u, y, theta_hat)
-% Computes one-step prediction residuals of an FIR model.
+% Computes the one-step prediction residuals of an estimated FIR model.
+%
+% INPUT
+% u: measured input signal samples
+% y: measured output signal samples
+% theta_hat: estimated FIR parameter vector
+%
+% OUTPUT
+% residuals: one-step prediction residuals of the estimated FIR model
 
     u = u(:);
     y = y(:);
